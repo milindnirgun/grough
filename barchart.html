@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<head>
+    <title>Trying Rough.js</title>
+</head>
+<style type="text/css">
+	canvas { border: 1px solid black; }
+</style>
+<body>
+<script src="https://rawgit.com/pshihn/rough/master/dist/rough.js"></script>
+<canvas id="canvas" width="960" height="500"></canvas>
+
+<script>
+const canvas = document.getElementById('canvas');
+var context = canvas.getContext('2d');
+const rc = rough.canvas(canvas, {
+      options: {
+        fill: "blue",
+        roughness: 0.8,
+        bowing: 0.7
+      }
+    });
+    
+    
+const xSeries = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+const ySeries = xSeries.map(y => Math.floor(Math.random() * 20));   // generate random output for range
+let plot_ySeries = ySeries.map(item => item * -1);  // invert the range for plotting transformation
+
+const margin = { top: 10, right: 10, bottom: 10, left: 10 };
+const width = canvas.width - margin.left - margin.right;
+const height = canvas.height - margin.top - margin.bottom;
+const offset = 10;   // arbitary offset to pad or reduce widths and heights
+
+//console.log(plot_ySeries);
+//console.log(xSeries.length);
+
+/******** Util Functions *********/
+function Point(x = 0, y = 0) {
+	this.x = x;
+	this.y = y;
+};
+
+const max = (data) => { return Math.max.apply(null, data) };
+const min = (data) => { return Math.min.apply(null, data) };
+
+// Scale linearly for given canvas size
+let scale = function (series, range = width) {
+		return range / (max(xSeries) - min(xSeries));
+	};
+	
+// Function to draw a simple horizontal line
+//TODO: add optional arguments to pass style
+function drawHorizontalLine(startPoint, length) {
+	rc.line(startPoint.x, startPoint.y,startPoint.x + length, startPoint.y, {strokeWidth: 2});
+};
+
+// Function to draw a simple vertical line
+//TODO: add optional arguments to pass style
+function drawVerticalLine(startPoint, height) {
+	rc.line(startPoint.x, startPoint.y, startPoint.x,(startPoint.y + height) * -1, {strokeWidth: 2});
+};
+
+function axes(origin) {
+	const xAxisLength = width - origin.x - 2 * offset;
+	const yAxisHeight = height - origin.y - 2 * offset;
+
+// TODO: The context tramslation does not always work from this function. Hence do it outside in main
+	//context.translate(origin.x, height - origin.y);
+	
+	
+	return {
+		getXAxisLength: () => { return xAxisLength },
+		getYAxisHeight: () => { return yAxisHeight },
+		draw: function() {
+				drawHorizontalLine(origin, xAxisLength);
+				drawVerticalLine(origin, yAxisHeight);
+				return;
+			}		
+	};
+};
+
+function drawXTick(point) {
+	let tickHeight = 12;
+	
+	let tickPoint = new Point(point.x, point.y - tickHeight/2); 
+	console.log("tickPoint is (" + tickPoint.x + ", " + tickPoint.y + ")");
+	//TODO: using drawVerticalLine with negative coordinates for y does not work somehow
+	rc.line(tickPoint.x, tickPoint.y, tickPoint.x,(tickPoint.y + tickHeight), {strokeWidth: 2});
+	//drawVerticalLine(tickPoint, tickHeight);
+};
+
+function drawYTick(point) {
+	let tickWidth = 12;
+	
+	let tickPoint = new Point(point.x -tickWidth/2, point.y); 
+	console.log("tickPoint is (" + tickPoint.x + ", " + tickPoint.y + ")");
+	//TODO: using drawVerticalLine with negative coordinates for y does not work somehow
+	rc.line(tickPoint.x, tickPoint.y * -1, tickPoint.x + tickWidth, tickPoint.y * -1, {strokeWidth: 2});
+	//drawVerticalLine(tickPoint, tickHeight);
+};
+
+function drawXTicks() {
+		// start at origin + scale
+		// y coordiantes will remain same as origin.y for all ticks
+		// call drawXTick() for each data point
+		let noTicks = axes(origin).getXAxisLength()  / xSeries.length -1;
+
+		xSeries.forEach( (value, i) => {
+			if (i < (xSeries.length) ) {
+				p = new Point(origin.x + (noTicks * (i +1)), origin.y);
+				drawXTick(p);
+				//console.log("i = " + i + ", " + p.x + ", " + p.y);
+			}
+		});	
+};	
+
+function drawYTicks() {
+		// start at origin + scale
+		// y coordiantes will remain same as origin.y for all ticks
+		// call drawXTick() for each data point
+		let noTicks = axes(origin).getYAxisHeight()  / ySeries.length -1;
+
+		ySeries.forEach( (value, i) => {
+			if (i < (ySeries.length) ) {
+				p = new Point(origin.x, origin.y + (noTicks * (i +1)));
+				drawYTick(p);
+				console.log("i = " + i + ", " + p.x + ", " + p.y);
+			}
+		});	
+};	
+
+	
+/******** End of Util Functions *********/	
+scale_y = 1;
+
+// Length of axes
+
+//const origin = new Point(margin.left, margin.bottom);
+const origin = new Point(margin.left, margin.bottom);
+context.translate(origin.x + offset, height - origin.y - offset);
+
+//console.log("X Axis Length = " + axes(origin).getXAxisLength());
+axes(origin).draw();
+let a = new Point(margin.left + 20, origin.y);
+console.log("a is (" + a.x + ", " + a.y + ")");
+
+//drawXTick(a);
+
+drawXTicks();
+drawYTicks();
+
+
+</script>
+ 
+  <p> <h2> Hello World</h2></p>
+</body>
+</html>
+
